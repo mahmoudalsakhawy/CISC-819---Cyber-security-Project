@@ -1,34 +1,33 @@
 # Reproducing Results — Adversarial Attacks and Defenses on CIFAR-10
 
-This guide explains how to set up your environment and run the notebook end-to-end to reproduce all experiments, plots, and saved models.
+In this guide we will setup the environment and run the notebook end-to-end, reproduce all experiments, plots, andSaved Models:
 
 ---
 
 ## 1. Prerequisites
 
 ### Hardware
-- **GPU strongly recommended.** Each full run (3 seeds × 3 models × 100 epochs) takes several hours on a modern GPU (e.g. RTX 3090) and is prohibitively slow on CPU alone.
-- Minimum **8 GB VRAM** for batch size 128.
+- **GPU (highly recommended). Each full run (3 seeds 3 models 100 epochs) takes several hours on a modern GPU (e.g. RTX 3090), and is prohibitively slow on CPU alone.
+- Minimum 8GB of VRAM when using batch_size 128
 
 ### Software
 - Python 3.8+
-- CUDA 11.3+ (if using GPU)
+- CUDA 11.3+ (only needed for GPU execution)
 
 ---
 
 ## 2. Environment Setup
 
-### Option A — pip (virtual environment)
+### Option A: pip (use this if you don't use conda)
 
 ```bash
-python -m venv adv_ml_env
-source adv_ml_env/bin/activate          # Windows: adv_ml_env\Scripts\activate
+ python -m venv advmlenv
+ source advmlenv/bin/activate # Windows use: advmlenv\Scripts\activate
 
 pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
 pip install numpy matplotlib seaborn pandas scikit-learn pillow tqdm jupyter
 ```
-
-### Option B — conda
+Option B: conda (use this if you already have conda installed)
 
 ```bash
 conda create -n adv_ml python=3.10
@@ -50,61 +49,59 @@ print(torch.cuda.get_device_name(0))       # e.g. NVIDIA GeForce RTX 3090
 
 ## 3. Running the Notebook
 
-### Launch Jupyter
+### Launch the notebook:
 
 ```bash
-jupyter notebook adversarial_ml_project_v6.ipynb
+jupyter notebook adversarial_ml_project.ipynb
 ```
 
 ### Run all cells in order
 
-Go to **Kernel → Restart & Run All** to execute every cell from scratch. The notebook is self-contained — CIFAR-10 is downloaded automatically on first run (≈170 MB).
+Go to Kernel Restart & Run All, and run the notebook from scratch. Note: The notebook is entirely self-contained-the CIFAR-10 dataset is automatically downloaded when the notebook first runs (170MB):
 
 ### Expected cell-by-cell output
 
 | Section | What happens |
 |---------|-------------|
-| **1 — Setup** | Libraries imported, device printed, seeds confirmed |
-| **2 — Dataset** | CIFAR-10 downloaded to `./data/`, `dataset_samples.png` saved |
-| **3 — Model & Utilities** | All functions defined; `✓` confirmation printed for each |
+| **1 — Setup** | Libraries are imported, the device is printed, and the seeds are confirmed. |
+| **2 — Dataset** | The CIFAR-10 dataset is downloaded andsaved to ./data/. A sample dataset is plotted in dataset_samples.png. |
+| **3 — Model & Utilities** | The baseline model is trained for 100 epochs. Intermediate losses and accuracies per epoch are printed in the console. A saved model checkpoint is created at baseline_model.pth. |
 | **4 — Baseline Training** | 100-epoch training loop with per-epoch logs; `baseline_model.pth` saved |
-| **5 — Attack Evaluation** | Accuracy computed at 10 epsilon values; 5 plots saved |
-| **6 — Defense Training** | FGSM-AT and PGD-AT training; `fgsm_at_model.pth`, `pgd_at_model.pth` saved |
-| **7 — Results** | Multi-seed evaluation (3 seeds × 3 models); 6 plots + 2 CSVs saved |
-| **8 — Analysis** | Markdown analysis cells; no code output |
+| **5 — Attack Evaluation** |  The performance of the baseline model is evaluated against an attack at 10 values of epsilon, and the accuracy is plotted in accuracyvsepsilon_baseline.png. 5 plots are saved with this. |
+| **6 — Defense Training** | FGSM-AT and PGD-AT models are trained, and their corresponding saved model checkpoints are created at fgsmatmodel.pth and pgdatmodel.pth respectively.|
+| **7 — Results** | The three models are evaluated over three seeds with the attack and accuracy, plotted in 6 plots and saved in two CSV files: resultsraw.csv and resultssummary.csv. |
+| **8 — Analysis** | Markdown cells for analyzing the results; these contain no executable code. |
 
 ---
 
 ## 4. Key Configuration Knobs
 
-All hyperparameters live in the `CFG` dictionary in **Section 1**. Common things you may want to adjust before running:
+The entire hyperparameter configuration is contained within the CFG dictionary in section 1. Some key values you might consider changing before running the notebook:
 
 | Parameter | Default | What it controls |
 |-----------|---------|-----------------|
-| `seeds` | `[42, 123, 7]` | Random seeds for multi-seed evaluation |
-| `epochs` | `100` | Training epochs per model |
-| `eps_train` | `0.03` | Adversarial perturbation budget during training |
-| `epsilons` | `[0.0 … 0.30]` | Epsilon values swept during attack evaluation |
-| `batch_size` | `128` | Reduce to `64` if you hit OOM errors |
-| `num_workers` | `2` | DataLoader workers; set to `0` on Windows if you get multiprocessing errors |
-| `trades_beta` | `6.0` | TRADES regularization strength for PGD-AT |
-| `pgd_adv_ratio` | `0.75` | Fraction of adversarial examples per batch in PGD-AT |
-| `epoch_sweep` | `[10, 50, 100]` | Epochs used in the optional training budget experiment |
+| `seeds` | `[42, 123, 7]` | The total number of epochs the models will be trained for. |
+| `epochs` | `100` | The total number of epochs the models will be trained for.|
+| `eps_train` | `0.03` | The size of adversarial perturbation used during training.|
+| `epsilons` | `[0.0 … 0.30]` |  Epsilon values that are tested during attack evaluation. |
+| `batch_size` | `128` | The number of samples that are processed in each training/evaluation batch. (Reduce if you get an out-of-memory error).|
+| `num_workers` | `2` | Number of worker threads to load data. (Set this to 0 for Windows if you encounter multi-processing issues). |
+| `trades_beta` | `6.0` |  The weighting factor for the TRADES regularization term.|
+| `pgd_adv_ratio` | `0.75` | The fraction of adversarial samples in each batch for PGD-AT.|
+| `epoch_sweep` | `[10, 50, 100]` | Epoch values to consider for optional training budget analysis. |
 
-**Quick smoke-test run** — to verify everything works before committing to a full run, set:
+**Quick smoke-test run** — To verify everything is running before committing to a full run, you may set:
 ```python
 CFG["epochs"]  = 5
 CFG["seeds"]   = [42]
 CFG["epsilons"] = [0.0, 0.03, 0.10]
 ```
-This completes in ~10 minutes on GPU and produces all plots with lower-quality numbers.
-
+This should complete in around 10 minutes on a GPU, generating all plots and with lower quality numbers than a full run.
 ---
 
 ## 5. Expected Outputs
 
-After a full run the following files will be written to the working directory:
-
+The following files are created in the working directory after a full run:
 ### Model checkpoints
 ```
 baseline_model.pth
@@ -136,7 +133,7 @@ seed_variance_violin.png
 epoch_sweep.png
 ```
 
-The final cell prints a manifest with file sizes confirming all outputs were written:
+The last cell prints a manifest that lists all created files and their sizes, so you know everything worked:
 ```
 ✓ baseline_model.pth                          44.7 MB
 ✓ results_raw.csv                              0.2 MB
@@ -147,7 +144,7 @@ The final cell prints a manifest with file sizes confirming all outputs were wri
 
 ## 6. Expected Accuracy Numbers
 
-These are the approximate results you should see after a full 3-seed run:
+You should expect the following numbers after a 3-seed run of the notebook:
 
 | Model | Clean | FGSM ε=0.03 | PGD-5 ε=0.03 | PGD-20 ε=0.03 |
 |-------|-------|-------------|--------------|----------------|
@@ -155,38 +152,39 @@ These are the approximate results you should see after a full 3-seed run:
 | FGSM-AT | ~89% | ~73% | ~67% | ~60% |
 | PGD-AT (TRADES) | ~87% | ~77% | ~74% | ~71% |
 
-The notebook includes two automatic sanity checks:
+There are two automated checks in the notebook:
 
 ```
-Ordering check at ε=0.03: FGSM > PGD-5 > PGD-20  ✓
-PGD-AT vs FGSM-AT gap under PGD-20: +Δ%            ✓
+1. Ordering check at epsilon=0.03: We check FGSM > PGD-5 > PGD-20.
+2. PGD-AT vs FGSM-AT gap under PGD-20: We calculate the increase in accuracy as a %.
 ```
 
-If either assertion fails, re-check that `pgd_alpha` is **not** hardcoded — it must be computed adaptively as `epsilon * 2.5 / steps`.
+If any of these fail, it is likely that alpha for PGD was hardcoded and should be computed adaptively from epsilon using the following relation inside pgd_attack(): alpha = epsilon * 2.5 / steps.
 
 ---
 
 ## 7. Troubleshooting
 
 **CUDA out of memory**
-Reduce `CFG["batch_size"]` from `128` to `64` or `32`.
+Reduce the value of CFG["batch_size"] to 64 or 32.
 
 **`multiprocessing` errors on Windows**
-Set `CFG["num_workers"] = 0`.
+Try setting CFG["num_workers"] to 0.
 
 **CIFAR-10 download fails**
-Manually download from https://www.cs.toronto.edu/~kriz/cifar.html, extract to `./data/cifar-10-batches-py/`, and set `download=False` in the dataset cells.
+Manually download the CIFAR-10 dataset from https://www.cs.toronto.edu/~kriz/cifar.html, unpack it, and place the entire contents in a ./data/cifar-10-batches-py directory. Then set the download parameter to False in the relevant dataset cells.
+
 
 **NaN loss during PGD-AT**
-This is guarded by the `torch.isfinite(loss)` check in `adversarial_training()`, which skips corrupt batches. If NaNs persist, lower `CFG["trades_beta"]` or increase the β warmup period (currently ramps 0→6 over the first 10 epochs).
+The loss calculation in adversarialtraining() is guarded by torch.isfinite(loss) to skip corrupted batches. If NaNs persist, consider reducing the CFG["tradesbeta"] value or increasing the warmup period (currently ramps 0-6 over the first 10 epochs).
 
 **Attack ordering assertion fails (`FGSM ≥ PGD-5 ≥ PGD-20`)**
-Ensure `alpha` is not overridden with a fixed value anywhere. The correct behaviour is `alpha = epsilon * 2.5 / steps` computed inside `pgd_attack()`.
+Make sure you have not hardcoded the value of alpha; it must be computed dynamically inside pgd_attack() with the equation: alpha = epsilon * 2.5 / steps.
 
 ---
 
 ## 8. Reproducibility Notes
 
-- All three models are trained with the same random seeds via `seed_everything()`, which sets Python, NumPy, and PyTorch seeds and enables `cudnn.deterministic = True`.
-- Results may vary slightly across different GPU hardware or CUDA versions due to non-deterministic CUDA kernels, even with the same seeds.
-- The Fairness Rule is enforced by sharing `CFG["epochs"]`, `CFG["lr"]`, `CFG["momentum"]`, and `CFG["weight_decay"]` across all models — no model receives extra compute.
+- We ensured reproducibility of the three models by training them using the same random seeds, which were set with the help of seed_everything() (it sets Python, NumPy, and PyTorch random seeds and enables cudnn.deterministic=True). However, expect minute deviations from the stated numbers due to non-deterministic behavior of CUDA kernels on different hardware and CUDA versions.
+- We implemented the Fairness Rule by providing all models with the same number of training epochs (and, thus, the same budget in compute terms) along with identical learning rates, momentum values, and weight decay hyperparameters-no model gets more computational advantage over the other.
+
